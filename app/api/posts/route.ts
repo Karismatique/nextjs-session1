@@ -1,43 +1,37 @@
 // app/api/posts/route.ts
-import { NextResponse } from 'next/server';
-import { getAllPosts, createPost } from '@/lib/store';
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: Request) {
-  const searchParams = new URL(request.url).searchParams;
-  const limit = Number(searchParams.get('limit') ?? 100);
-  const author = searchParams.get('author');
+  const searchParams = new URL(request.url).searchParams
+  const limit = Number(searchParams.get('limit') ?? 20)
   
-  let posts = getAllPosts();
+  const posts = await prisma.post.findMany({
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: { author: true },
+  })
   
-  if (author) {
-    posts = posts.filter(p => p.handle.toLowerCase().includes(author.toLowerCase()));
-  }
-  
-  return NextResponse.json({
-    posts: posts.slice(0, limit),
-    total: posts.length,
-  });
+  return NextResponse.json({ posts, total: posts.length })
 }
 
 export async function POST(request: Request) {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 });
+  let body
+  try { 
+    body = await request.json() 
+  } catch { 
+    return NextResponse.json({ error: 'JSON invalide' }, { status: 400 }) 
+  }
+  
+  const { content, authorId } = body
+  if (!content || !authorId) {
+    return NextResponse.json({ error: 'content et authorId requis' }, { status: 400 })
   }
 
-  const { author, handle, content } = body;
-
-  if (!author || !handle || !content) {
-    return NextResponse.json({ error: 'author, handle et content sont requis' }, { status: 400 });
-  }
-
-  // Challenge B : Limite de caractères côté serveur
-  if (content.length > 280) {
-    return NextResponse.json({ error: 'Le contenu ne doit pas dépasser 280 caractères' }, { status: 400 });
-  }
-
-  const post = createPost({ author, handle, content });
-  return NextResponse.json(post, { status: 201 });
+  const post = await prisma.post.create({
+    data: { content, authorId },
+    include: { author: true },
+  })
+  
+  return NextResponse.json(post, { status: 201 })
 }
