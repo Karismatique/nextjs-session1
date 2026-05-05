@@ -1,66 +1,70 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+// app/page.tsx
+import PostCard from '@/components/PostCard';
 
-export default function Home() {
+// Définition des types basés sur JSONPlaceholder
+type Post = {
+  id: number;
+  userId: number;
+  title: string;
+  body: string;
+};
+
+type User = {
+  id: number;
+  name: string;
+  username: string;
+};
+
+// Fonction pour récupérer les données en parallèle
+async function getPostsWithUsers() {
+  // Lancer les deux fetch en parallèle est plus rapide qu'en série
+  const [postsRes, usersRes] = await Promise.all([
+    fetch('https://jsonplaceholder.typicode.com/posts?_limit=10', { next: { revalidate: 60 } }),
+    fetch('https://jsonplaceholder.typicode.com/users', { next: { revalidate: 300 } }),
+  ]);
+
+  // Vérification des erreurs
+  if (!postsRes.ok || !usersRes.ok) {
+    throw new Error('Erreur lors du chargement des données');
+  }
+
+  const [posts, users]: [Post[], User[]] = await Promise.all([
+    postsRes.json(), 
+    usersRes.json()
+  ]);
+
+  // Créer un dictionnaire userId -> user pour un accès rapide
+  const usersById = Object.fromEntries(
+    users.map((u) => [u.id, u])
+  );
+
+  // Combiner les données
+  return posts.map((post) => ({
+    ...post,
+    author: usersById[post.userId]?.name ?? 'Inconnu',
+    handle: '@' + (usersById[post.userId]?.username ?? 'inconnu')
+  }));
+}
+
+export default async function HomePage() {
+  const posts = await getPostsWithUsers();
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="container">
+      <h1 className="page-title">Fil d&apos;actualité</h1>
+      <div className="feed">
+        {posts.map((post) => (
+          <PostCard 
+            key={post.id}
+            author={post.author}
+            handle={post.handle}
+            body={post.body} // Nouveau champ pour l'API
+            // eslint-disable-next-line react-hooks/purity
+            likes={Math.floor(Math.random() * 50)} // Faux likes car l'API n'en a pas
+            time="Récemment" // Fausse date car l'API n'en a pas
+            id={0} title={''}          />
+        ))}
+      </div>
     </div>
   );
 }
