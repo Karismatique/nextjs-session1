@@ -1,26 +1,35 @@
-// app/api/posts/[id]/likes/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 
-type Params = { params: Promise<{ id: string }> } // Adapté pour Next.js 15+
+// Typage adapté pour les versions récentes de Next.js (params est une promesse)
+type Params = { params: Promise<{ id: string }> }
 
 export async function POST(request: Request, { params }: Params) {
-  const { id } = await params;
-  const { increment } = await request.json()
-  
-  if (typeof increment !== 'boolean') {
-    return NextResponse.json({ error: 'increment doit être un booléen' }, { status: 400 })
-  }
-  
   try {
-    const post = await prisma.post.update({
+    // 1. On récupère l'ID depuis l'URL
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+
+    // 2. On vérifie que l'utilisateur est bien connecté
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    // 3. On met à jour le post en incrémentant (+1) le champ 'likes'
+    const updatedPost = await prisma.post.update({
       where: { id: Number(id) },
-      data: {
-        likes: { [increment ? 'increment' : 'decrement']: 1 },
-      },
+      data: { 
+        likes: { increment: 1 } 
+      }
     })
-    return NextResponse.json({ likes: post.likes })
-  } catch {
-    return NextResponse.json({ error: 'Post introuvable' }, { status: 404 })
+
+    // 4. On renvoie un succès propre en JSON
+    return NextResponse.json(updatedPost)
+    
+  } catch (error) {
+    console.error("Erreur API Like:", error)
+    return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
   }
 }
