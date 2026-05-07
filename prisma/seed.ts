@@ -1,37 +1,70 @@
-// prisma/seed.ts
 import { PrismaClient } from '@prisma/client'
+
 const prisma = new PrismaClient()
 
 async function main() {
+  console.log('🌱 Début du seed...')
+
+  // 1. (Optionnel mais recommandé) On nettoie la base de données pour éviter les doublons
+  await prisma.like.deleteMany()
   await prisma.post.deleteMany()
   await prisma.user.deleteMany()
-  
-  console.log('Seeding...')
-  
+
+  // 2. Création des utilisateurs de test
   const alice = await prisma.user.create({
-    data: { name: 'Alice Martin', handle: '@alice_dev', email: 'alice@linkup.dev' },
-  })
-  
-  const bob = await prisma.user.create({
-    data: { name: 'Bob Nguyen', handle: '@bob_codes', email: 'bob@linkup.dev' },
-  })
-  
-  const clara = await prisma.user.create({
-    data: { name: 'Clara Dubois', handle: '@clara_ui', email: 'clara@linkup.dev' },
+    data: {
+      name: 'Alice',
+      email: 'alice@example.com',
+      handle: '@alice_dev',
+    },
   })
 
+  const bob = await prisma.user.create({
+    data: {
+      name: 'Bob',
+      email: 'bob@example.com',
+      handle: '@bob_builder',
+    },
+  })
+
+  const clara = await prisma.user.create({
+    data: {
+      name: 'Clara',
+      email: 'clara@example.com',
+      handle: '@clara_codes',
+    },
+  })
+
+  // 3. Création des posts (Remarquez l'absence totale du champ "likes: XX")
   await prisma.post.createMany({
     data: [
-      { content: 'Je viens de déployer mon premier projet Next.js 🚀', likes: 24, authorId: alice.id },
-      { content: 'Les Server Components changent vraiment la façon de penser le rendu !', likes: 18, authorId: bob.id },
-      { content: 'Tailwind ou CSS classique avec Next.js ? Curieuse des pratiques', likes: 41, authorId: clara.id },
-      { content: 'Prisma + Next.js combo parfait pour une API type-safe', likes: 33, authorId: alice.id },
+      { 
+        content: 'Je viens de déployer mon premier projet Next.js 🚀', 
+        authorId: alice.id 
+      },
+      { 
+        content: 'Les Server Components changent vraiment la façon de penser le rendu !', 
+        authorId: bob.id 
+      },
+      { 
+        content: 'Du CSS classique avec Next.js ? Curieuse des pratiques', 
+        authorId: clara.id 
+      },
+      { 
+        content: 'Next.js combo parfait pour une API type-safe', 
+        authorId: alice.id 
+      },
     ],
   })
-  
-  console.log('Seed terminé')
+
+  console.log('✅ Base de données initialisée avec succès !')
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
+  .catch((e) => {
+    console.error('❌ Erreur lors du seed:', e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
