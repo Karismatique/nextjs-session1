@@ -1,18 +1,18 @@
 // middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { auth } from '@/auth'
+import { NextResponse } from 'next/server'
 
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-  const method = request.method;
+export default auth(function middleware(req) {
+  const pathname = req.nextUrl.pathname;
+  const session = req.auth;
 
   if (pathname.startsWith('/api')) {
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
-    console.log(`[${timestamp}] ${method.padEnd(6)} ${pathname}`);
+    const ts = new Date().toISOString().slice(11, 19);
+    console.log(`[${ts}] ${req.method.padEnd(6)} ${pathname} ${session ? '🟢' : '🔴'}`);
   }
   return NextResponse.next();
-}
+});
 
 export const config = {
-  matcher: ['/api/:path*'],
+  matcher: ['/api/:path*', '/profile/:path*'],
 };

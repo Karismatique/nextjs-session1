@@ -1,78 +1,64 @@
 // components/NewPostForm.tsx
-"use client";
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 export default function NewPostForm() {
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [authorId, setAuthorId] = useState<string | null>(null);
-  const router = useRouter();
+  const { data: session } = useSession()
+  const [content, setContent] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
-  // Tâche B : Fetch des utilisateurs au chargement pour récupérer le premier ID
-  useEffect(() => {
-    async function fetchUsers() {
-      const res = await fetch('/api/users');
-      if (res.ok) {
-        const users = await res.json();
-        if (users.length > 0) {
-          setAuthorId(users[0].id); // Assigne l'ID du premier utilisateur disponible
-        }
-      }
-    }
-    fetchUsers();
-  }, []);
+  if (!session) {
+    return (
+      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', textAlign: 'center' }}>
+        <p style={{ color: '#6b7280' }}>
+          <a href='/api/auth/signin' style={{ color: '#6d28d9', textDecoration: 'none', fontWeight: 'bold' }}>Connectez-vous</a> pour publier un post
+        </p>
+      </div>
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!content.trim() || !authorId) return;
+    e.preventDefault()
+    if (!content.trim() || !session?.user?.id) return
     
-    setLoading(true);
-    setError(null);
-    
+    setLoading(true)
     try {
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content,
-          authorId, // L'ID réel provenant de la BDD est désormais envoyé
+          authorId: session.user.id, // L'ID vient de la session, plus de hardcode !
         }),
-      });
-      
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? 'Erreur lors de la création');
+      })
+      if (res.ok) {
+        setContent('')
+        router.refresh()
       }
-      
-      setContent('');
-      router.refresh(); 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
-  // (Le rendu JSX du formulaire reste le même que lors de la séance 4)
   return (
     <form onSubmit={handleSubmit} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Quoi de neuf dans votre stack ?"
+      <p style={{ fontSize: '0.85rem', marginBottom: '0.5rem', color: '#374151' }}>
+        Publier en tant que <strong>{session.user.name}</strong>
+      </p>
+      <textarea 
+        value={content} 
+        onChange={e => setContent(e.target.value)}
+        placeholder="Quoi de neuf dans votre stack ?" 
         rows={3}
-        style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', resize: 'vertical', fontFamily: 'inherit', marginBottom: '0.75rem' }}
+        style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', marginBottom: '0.5rem', fontFamily: 'inherit', resize: 'vertical' }} 
       />
-      {error && <p style={{ color: '#dc2626', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{error}</p>}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{content.length} / 280 caractères</span>
-        <button type="submit" disabled={loading || !content.trim() || !authorId} style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', background: loading ? '#9ca3af' : '#6d28d9', color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
-          {loading ? 'Publication...' : 'Publier'}
-        </button>
-      </div>
+      <button type="submit" disabled={loading || !content.trim()} style={{ background: '#6d28d9', color: 'white', padding: '0.5rem 1.25rem', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+        {loading ? 'Publication...' : 'Publier'}
+      </button>
     </form>
-  );
+  )
 }
