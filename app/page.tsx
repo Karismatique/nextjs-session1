@@ -10,11 +10,13 @@ export default async function HomePage() {
   const session = await auth() // On récupère l'utilisateur connecté
   const currentUserId = session?.user?.id // On extrait son ID (undefined si non connecté)
 
-  const posts = await prisma.post.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { author: true },
-    take: 20,
-  })
+ const posts = await prisma.post.findMany({
+  orderBy: { createdAt: 'desc' },
+  include: { 
+    author: true,
+    likedBy: true // On récupère la liste des gens qui ont liké
+  },
+})
 
   return (
     <div className="container">
