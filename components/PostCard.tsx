@@ -56,6 +56,10 @@ export default function PostCard({ id, author, handle, body, likes: initialLikes
       // On appelle votre route API existante pour sauvegarder le like
       const res = await fetch(`/api/posts/${id}/likes`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // On envoie un JSON vide
       })
 
       if (!res.ok) {
