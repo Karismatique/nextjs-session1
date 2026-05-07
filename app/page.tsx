@@ -11,12 +11,13 @@ export default async function HomePage() {
   const currentUserId = session?.user?.id // On extrait son ID (undefined si non connecté)
 
  const posts = await prisma.post.findMany({
-  orderBy: { createdAt: 'desc' },
-  include: { 
-    author: true,
-    likedBy: true // On récupère la liste des gens qui ont liké
-  },
-})
+    orderBy: { createdAt: 'desc' },
+    include: { 
+      author: true,
+      likedBy: true // <-- TRÈS IMPORTANT : On demande la liste des likes !
+    },
+    take: 20,
+  })
 
   return (
     <div className="container">
@@ -31,7 +32,7 @@ export default async function HomePage() {
             author={post.author.name}
             handle={post.author.handle}
             body={post.content}
-            likes={post.likes}
+            likedBy={post.likedBy} // On passe la liste des likes à chaque PostCard
             time={post.createdAt.toLocaleDateString('fr-FR')}
             authorId={post.authorId}
             currentUserId={currentUserId}
