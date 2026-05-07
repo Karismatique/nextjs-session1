@@ -1,4 +1,3 @@
-// types/next-auth.d.ts
 import 'next-auth'
 
 declare module 'next-auth' {
@@ -9,5 +8,9 @@ declare module 'next-auth' {
       email?: string | null
       image?: string | null
     }
+  }
+  
+  interface User {
+    handle?: string | null
   }
 }
