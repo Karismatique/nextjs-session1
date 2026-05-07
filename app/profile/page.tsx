@@ -9,9 +9,13 @@ export default async function ProfilePage() {
   if (!session) redirect('/api/auth/signin')
   
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: { posts: { orderBy: { createdAt: 'desc' } } },
-  })
+  where: { id: session.user.id },
+  include: {
+    posts: {
+      include: { likedBy: true } // <-- Ajoutez cette ligne !
+    }
+  }
+})
   
   if (!user) redirect('/')
 
@@ -33,7 +37,7 @@ export default async function ProfilePage() {
       {user.posts.map(post => (
         <div key={post.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1rem', marginBottom: '0.75rem' }}>
           <p>{post.content}</p>
-          <small style={{ color: '#9ca3af' }}>Likes : {post.likes}</small>
+          <small style={{ color: '#9ca3af' }}>Likes : {post.likedBy?.length || 0}</small>
         </div>
       ))}
     </div>
