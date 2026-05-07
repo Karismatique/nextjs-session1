@@ -28,13 +28,11 @@ export default async function HomePage() {
             id={post.id}
             author={post.author.name}
             handle={post.author.handle}
-            title={`Post #${post.id}`} 
             body={post.content}
             likes={post.likes}
             time={post.createdAt.toLocaleDateString('fr-FR')}
-            
-            authorId={post.authorId} // L'ID du créateur du post
-            currentUserId={currentUserId} // L'ID de l'utilisateur qui regarde la page
+            authorId={post.authorId}
+            currentUserId={currentUserId}
           />
         ))}
       </div>
