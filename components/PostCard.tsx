@@ -1,41 +1,58 @@
-import Link from 'next/link';
-import LikeButton from '@/components/LikeButton';
+'use client'
+
+import { useTransition } from 'react'
+import { deletePost } from '@/app/actions'
 
 type PostCardProps = {
-  id: number;
-  author: string;
-  handle: string;
-  title: string;
-  body: string;
-  likes: number;
-  time: string;
-};
+  id: number
+  author: string | null
+  handle: string | null
+  body: string
+  likes: number
+  time: string
+  authorId: string
+  currentUserId?: string
+}
 
-export default function PostCard({ id, author, handle, title, body, likes, time }: PostCardProps) {
+export default function PostCard({ id, author, handle, body, likes, time, authorId, currentUserId }: PostCardProps) {
+  const [isPending, startTransition] = useTransition() // Permet de gérer l'état de chargement de l'action
+  
+  // Vérification de la propriété du post
+  const isOwner = currentUserId === authorId
+
+  const handleDelete = () => {
+    if (confirm('Voulez-vous vraiment supprimer ce post ?')) {
+      startTransition(async () => {
+        try {
+          await deletePost(id)
+        } catch (error) {
+          alert("Erreur lors de la suppression.")
+        }
+      })
+    }
+  }
+
   return (
-    <article className="post-card">
-      <div className="post-header">
-        <div className="post-author-info">
-          <span className="post-author">{author}</span>
-          <span className="post-handle">{handle}</span>
+    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div>
+          <strong>{author}</strong> <span style={{ color: '#6b7280' }}>{handle}</span> • <small>{time}</small>
         </div>
-        <time className="post-time">{time}</time>
+        
+        {/* Affichage conditionnel de la poubelle (Option C) */}
+        {isOwner && (
+          <button 
+            onClick={handleDelete}
+            disabled={isPending}
+            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: isPending ? 'wait' : 'pointer' }}
+            title="Supprimer mon post"
+          >
+            {isPending ? '⏳' : '🗑️'}
+          </button>
+        )}
       </div>
-
-      {/* CORRECTION ICI : On utilise une classe CSS classique */}
-      <Link href={`/posts/${id}`} className="post-link">
-        <h3 style={{ margin: '0.5rem 0', fontWeight: 'bold', color: '#111827' }}>
-          {title}
-        </h3>
-      </Link>
-      
-      <p className="post-content">
-        {body}
-      </p>
-
-      <div className="post-footer">
-        <LikeButton initialLikes={likes} />
-      </div>
-    </article>
-  );
+      <p style={{ marginTop: '0.5rem' }}>{body}</p>
+      <small style={{ color: '#9ca3af' }}>❤️ {likes} likes</small>
+    </div>
+  )
 }

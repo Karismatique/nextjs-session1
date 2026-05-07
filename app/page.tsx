@@ -2,10 +2,14 @@
 import { prisma } from '@/lib/prisma'
 import PostCard from '@/components/PostCard'
 import NewPostForm from '@/components/NewPostForm'
+import { auth } from '@/auth' // On importe l'authentification
 
-export const dynamic = 'force-dynamic'; // Désactivation du cache de page 
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
+  const session = await auth() // On récupère l'utilisateur connecté
+  const currentUserId = session?.user?.id // On extrait son ID (undefined si non connecté)
+
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: 'desc' },
     include: { author: true },
@@ -14,7 +18,7 @@ export default async function HomePage() {
 
   return (
     <div className="container">
-      <h1 className="page-title">Fil d&apos;actualité</h1>
+      <h1 className="page-title">Fil d'actualité</h1>
       <NewPostForm />
       
       <div className="feed">
@@ -28,6 +32,9 @@ export default async function HomePage() {
             body={post.content}
             likes={post.likes}
             time={post.createdAt.toLocaleDateString('fr-FR')}
+            
+            authorId={post.authorId} // L'ID du créateur du post
+            currentUserId={currentUserId} // L'ID de l'utilisateur qui regarde la page
           />
         ))}
       </div>
